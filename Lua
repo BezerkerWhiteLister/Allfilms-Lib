@@ -1,0 +1,237 @@
+local AllfilmUI = {}
+
+print("Allfilm library v6.k3 Powered by Electric Federal")
+
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local function create(class, properties)
+    local inst = Instance.new(class)
+    for property, value in pairs(properties) do
+        inst[property] = value
+    end
+    return inst
+end
+
+local function MakeDraggable(frame)
+    local dragging, dragInput, dragStart, startPos
+
+    local function update(input)
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+
+    frame.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+
+    frame.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            update(input)
+        end
+    end)
+end
+
+function AllfilmUI:CreateWindow(title)
+    local gui = create("ScreenGui", {Name = "AllfilmUI", Parent = game.CoreGui})
+
+    local MainFrame = create("Frame", {
+        Parent = gui,
+        BackgroundColor3 = Color3.new(0, 0, 0),
+        Size = UDim2.new(0, 400, 0, 600),
+        Position = UDim2.new(0.5, -200, 0.5, -300),
+        BorderSizePixel = 2,
+        BorderColor3 = Color3.fromRGB(0, 255, 0)
+    })
+    MakeDraggable(MainFrame)
+
+    local Title = create("TextLabel", {
+        Parent = MainFrame,
+        Text = title,
+        BackgroundTransparency = 1,
+        Font = Enum.Font.SourceSans,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextSize = 20,
+        Size = UDim2.new(1, 0, 0, 50)
+    })
+
+    local TabHolder = create("Frame", {
+        Parent = MainFrame,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 50),
+        Size = UDim2.new(1, 0, 1, -50)
+    })
+
+    local Tabs = {}
+
+    function Tabs:CreateTab(tabName)
+        local TabButton = create("TextButton", {
+            Parent = Title,
+            Text = tabName,
+            BackgroundTransparency = 1,
+            Font = Enum.Font.SourceSans,
+            TextColor3 = Color3.fromRGB(255, 255, 255),
+            TextSize = 16,
+            Size = UDim2.new(0, 100, 0, 50),
+            Position = UDim2.new(#Title:GetChildren() - 1, 0, 0, 0)
+        })
+
+        local TabFrame = create("ScrollingFrame", {
+            Parent = TabHolder,
+            BackgroundTransparency = 1,
+            Size = UDim2.new(1, 0, 1, 0),
+            CanvasSize = UDim2.new(0, 0, 0, 0),
+            ScrollBarThickness = 5,
+            BorderSizePixel = 0,
+            Visible = false
+        })
+
+        local function UpdateCanvasSize()
+            local contentSize = TabFrame.UIListLayout.AbsoluteContentSize
+            TabFrame.CanvasSize = UDim2.new(0, 0, 0, contentSize.Y)
+        end
+
+        local UIListLayout = create("UIListLayout", {
+            Parent = TabFrame,
+            SortOrder = Enum.SortOrder.LayoutOrder
+        })
+
+        UIListLayout.Changed:Connect(UpdateCanvasSize)
+
+        TabButton.MouseButton1Click:Connect(function()
+            for _, v in pairs(TabHolder:GetChildren()) do
+                v.Visible = false
+            end
+            TabFrame.Visible = true
+        end)
+
+        local Elements = {}
+
+        function Elements:Button(text, callback)
+            local Button = create("TextButton", {
+                Parent = TabFrame,
+                Text = text,
+                Size = UDim2.new(0, 200, 0, 50),
+                BackgroundColor3 = Color3.new(0, 0, 0),
+                BorderColor3 = Color3.fromRGB(0, 255, 0),
+                AutoButtonColor = false,
+                Font = Enum.Font.SourceSans,
+                TextColor3 = Color3.new(1, 1, 1),
+                TextSize = 16,
+            })
+
+            Button.MouseEnter:Connect(function()
+                TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.new(0.1, 0.1, 0.1)}):Play()
+            end)
+
+            Button.MouseLeave:Connect(function()
+                TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = Color3.new(0, 0, 0)}):Play()
+            end)
+
+            Button.MouseButton1Click:Connect(callback or function() end)
+
+            return Button
+        end
+
+        function Elements:Toggle(text, callback)
+            local Toggled = false
+            local Toggle = create("TextButton", {
+                Parent = TabFrame,
+                Text = text,
+                Size = UDim2.new(0, 200, 0, 50),
+                BackgroundColor3 = Color3.new(0, 0, 0),
+                BorderColor3 = Color3.fromRGB(0, 255, 0),
+                AutoButtonColor = false,
+                Font = Enum.Font.SourceSans,
+                TextColor3 = Color3.new(1, 1, 1),
+                TextSize = 16,
+            })
+
+            local Circle = create("Frame", {
+                Parent = Toggle,
+                Size = UDim2.new(0, 30, 0, 30),
+                Position = UDim2.new(0, 170, 0, 10),
+                BackgroundColor3 = Color3.fromRGB(0, 255, 0),
+                BorderColor3 = Color3.new(0, 0, 0),
+            })
+
+            Toggle.MouseButton1Click:Connect(function()
+                Toggled = not Toggled
+                callback(Toggled)
+                TweenService:Create(Circle, TweenInfo.new(0.2), {Position = Toggled and UDim2.new(0, 10, 0, 10) or UDim2.new(0, 170, 0, 10)}):Play()
+            end)
+
+            return Toggle
+        end
+
+        function Elements:Dropdown(text, options, callback)
+            local Dropdown = create("TextButton", {
+                Parent = TabFrame,
+                Text = text,
+                Size = UDim2.new(0, 200, 0, 50),
+                BackgroundColor3 = Color3.new(0, 0, 0),
+                BorderColor3 = Color3.fromRGB(0, 255, 0),
+                AutoButtonColor = false,
+                Font = Enum.Font.SourceSans,
+                TextColor3 = Color3.new(1, 1, 1),
+                TextSize = 16,
+            })
+
+            local DropdownFrame = create("Frame", {
+                Parent = TabFrame,
+                Size = UDim2.new(0, 200, 0, #options * 30),
+                BackgroundColor3 = Color3.new(0, 0, 0),
+                BorderColor3 = Color3.fromRGB(0, 255, 0),
+                Visible = false,
+            })
+
+            for i, option in ipairs(options) do
+                local OptionButton = create("TextButton", {
+                    Parent = DropdownFrame,
+                    Text = option,
+                    Size = UDim2.new(1, 0, 0, 30),
+                    BackgroundColor3 = Color3.new(0, 0, 0),
+                    BorderColor3 = Color3.fromRGB(0, 255, 0),
+                    AutoButtonColor = false,
+                    Font = Enum.Font.SourceSans,
+                    TextColor3 = Color3.new(1, 1, 1),
+                    TextSize = 16,
+                })
+
+                OptionButton.MouseButton1Click:Connect(function()
+                    Dropdown.Text = option
+                    callback(option)
+                    DropdownFrame.Visible = false
+                end)
+            end
+
+            Dropdown.MouseButton1Click:Connect(function()
+                DropdownFrame.Visible = not DropdownFrame.Visible
+            end)
+
+            return Dropdown
+        end
+
+        return Elements
+    end
+
+    return Tabs
+end
+
+return AllfilmUI
